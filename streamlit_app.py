@@ -1,36 +1,27 @@
-# streamlit_app.py
 import streamlit as st
 import threading
-import storage
-import bot
-import asyncio
+from telegram.ext import Updater, CommandHandler
 
-st.set_page_config(page_title="Admin Panel", page_icon="🔧")
+# === Telegram Bot ===
+def start(update, context):
+    update.message.reply_text("Hello! I'm running inside Streamlit!")
 
-st.title("🤖 Telegram Bot Admin Panel")
+def run_bot():
+    TOKEN = "7240504796:AAGQ3kpkT9cjtRvG_gwt7VCKPD5eoqfwLxM"
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
 
-# Start the bot
-if not storage.bot_running:
-    if st.button("▶️ Start Bot"):
-        thread = threading.Thread(target=bot.run_bot)
-        thread.start()
-        st.success("Bot started.")
+    dp.add_handler(CommandHandler("start", start))
 
-# Display messages
-st.subheader("📩 Messages Received")
-if storage.messages:
-    for user_id, msg in reversed(storage.messages[-10:]):
-        st.write(f"👤 {user_id}: {msg}")
-else:
-    st.info("No messages yet.")
+    updater.start_polling()
+    updater.idle()
 
-# Broadcast message
-st.subheader("📢 Broadcast Message")
-message = st.text_area("Type your message to send to all users:")
+# === Start Bot in Background Thread ===
+if 'bot_started' not in st.session_state:
+    bot_thread = threading.Thread(target=run_bot, daemon=True)
+    bot_thread.start()
+    st.session_state.bot_started = True
 
-if st.button("Send Broadcast"):
-    if not message.strip():
-        st.warning("Message cannot be empty.")
-    else:
-        asyncio.run(bot.broadcast_message(message))
-        st.success("Broadcast sent!")
+# === Streamlit UI ===
+st.title("Telegram Bot Running in Streamlit")
+st.success("Bot is running in the background! Send /start to your bot.")
